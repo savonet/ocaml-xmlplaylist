@@ -1,0 +1,6 @@
+name="xmlplaylist"
+version="@VERSION@"
+description="OCaml bindings for xmlplaylist"
+requires="@requires@"
+archive(byte)="xmlplaylist.cma"
+archive(native)="xmlplaylist.cmxa"
