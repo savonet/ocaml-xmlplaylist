@@ -22,7 +22,7 @@
 
 
 (* Generic xml parsing module
- * Uses xml-light library *)
+ * Uses xmlm library *)
 
 type error = XmlError of string | Empty | UnknownType | Internal
 type format = Podcast | Xspf | Smil | Asx
@@ -37,10 +37,48 @@ let string_of_error e =
 
 let raise e = raise (Error e)
 
+(** Wrapper to parse data from Xmlm and return
+  * a xml tree as previously returned by xml-light *)
+type xml =
+  |  Element of (string * (string * string) list * xml list)
+  |  PCData of string
+
+let parse_string s =
+  let source = `String (0,s) in
+  let input = Xmlm.make_input source in
+  (* Map a tag representation in xmlm to
+   * (name, attributes list) where attribute = string*string. *)
+  let make_tag (x,l) = 
+    (* Forget about the uri attribute *)
+    let l = 
+      List.map (fun ((_,y),z) -> (y,z)) l 
+    in
+    snd x,l
+  in
+  let rec get_elems l =
+    if Xmlm.eoi input then
+      l
+    else
+      match Xmlm.input input with
+        | `El_start tag -> 
+            let elem = get_elems [] in
+            let (name,attributes) = make_tag tag in
+            get_elems ((Element (name,attributes,List.rev elem)) :: l)
+        | `El_end -> l
+        | `Data s -> 
+            get_elems ((PCData s) :: l)
+        | `Dtd _ -> get_elems l
+  in
+  try
+    let elems = get_elems [] in
+    Element ("",[],List.rev elems)
+  with
+    | Xmlm.Error (_,e) -> raise (XmlError (Xmlm.error_message e))
+
 let rec lowercase_tags xml =
   match xml with
-    | Xml.Element(s,l,x) ->
-        Xml.Element(String.lowercase s,
+    | Element(s,l,x) ->
+        Element(String.lowercase s,
                     List.map
                       (fun (a,b) -> (String.lowercase a,b))
                       l,
@@ -58,11 +96,11 @@ let rec get_format x =
        | [] -> raise UnknownType
    in *)
   match x with
-    | Xml.Element(s,l,x) :: l' when s = "playlist" -> Xspf
-    | Xml.Element(s,l,x) :: l' when s = "rss" -> Podcast (* match_rss l *)
-    | Xml.Element(s,l,x) :: l' when s = "smil" -> Smil
-    | Xml.Element(s,l,x) :: l' when s = "asx" -> Asx
-    | Xml.Element(s,l,x) :: l' -> get_format (l' @ x)
+    | Element(s,l,x) :: l' when s = "playlist" -> Xspf
+    | Element(s,l,x) :: l' when s = "rss" -> Podcast (* match_rss l *)
+    | Element(s,l,x) :: l' when s = "smil" -> Smil
+    | Element(s,l,x) :: l' when s = "asx" -> Asx
+    | Element(s,l,x) :: l' -> get_format (l' @ x)
     | _ :: l' -> get_format l'
     | [] -> raise UnknownType
 
@@ -74,7 +112,7 @@ let podcast_uri l x =
 
 let xspf_uri l x =
   match x with
-    | Xml.PCData(v) :: [] -> v
+    | PCData(v) :: [] -> v
     | _ -> raise Empty
 
 let asx_uri l x =
@@ -93,45 +131,49 @@ let xml_spec f =
     | _ -> raise Internal
 
 let xml_tracks t xml =
-  try
-    let author,location,track,extract = xml_spec t in
-    let rec get_tracks l r =
-      match l with
-        | Xml.Element (s,_,x) :: l' when s = track -> get_tracks l' (x :: r)
-        | Xml.Element (s,_,x) :: l' -> get_tracks (l' @ x) r
-        | _ :: l' -> get_tracks l' r
-        | [] -> r
-    in
-    let tracks = get_tracks [xml] [] in
-    let rec parse_uri l =
-      match l with
-        | Xml.Element (s,l,x) :: l' when s = location -> extract l x
-        | Xml.Element (_,_,_) :: l' -> parse_uri l'
-        | _ :: l' -> parse_uri l'
-        | [] -> raise Empty
-    in
-    let rec parse_metadatas m l =
-      match l with
-        | Xml.Element (s,_,Xml.PCData(x) :: []) :: l' when s = author 
-	     -> ("artist",x) :: (parse_metadatas m l')
-        | Xml.Element (s,_,Xml.PCData(x) :: []) :: l' -> (s,x) :: (parse_metadatas m l')
-        | _ :: l' -> (parse_metadatas m l')
-        | [] -> m
-    in
-    let rec parse_tracks t =
-      match t with
-        | track :: l -> (try (parse_metadatas [] track, parse_uri track) :: parse_tracks l with Error Empty -> parse_tracks l)
-        | [] -> []
-    in
-    parse_tracks tracks
-  with
-    | Xml.Error(e) -> raise (XmlError (Xml.error e))
+  let author,location,track,extract = xml_spec t in
+  let rec get_tracks l r =
+    match l with
+      | Element (s,_,x) :: l' when s = track -> get_tracks l' (x :: r)
+      | Element (s,_,x) :: l' -> get_tracks (l' @ x) r
+      | _ :: l' -> get_tracks l' r
+      | [] -> r
+  in
+  let tracks = get_tracks [xml] [] in
+  let rec parse_uri l =
+    match l with
+      | Element (s,l,x) :: l' when s = location -> extract l x
+      | Element (_,_,_) :: l' -> parse_uri l'
+      | _ :: l' -> parse_uri l'
+      | [] -> raise Empty
+  in
+  let rec parse_metadatas m l =
+    match l with
+      | Element (s,_,PCData(x) :: []) :: l' when s = author 
+           -> ("artist",x) :: (parse_metadatas m l')
+      | Element (s,_,PCData(x) :: []) :: l' -> (s,x) :: (parse_metadatas m l')
+      | _ :: l' -> (parse_metadatas m l')
+      | [] -> m
+  in
+  let rec parse_tracks t =
+    match t with
+      | track :: l -> 
+         begin
+          try 
+            (parse_metadatas [] track, parse_uri track) :: 
+                           parse_tracks l 
+          with 
+            | Error Empty -> parse_tracks l
+         end
+      | [] -> []
+  in
+  parse_tracks tracks
 
 let smil_tracks xml =
   let rec get_tracks r l =
     match l with
-      | Xml.Element ("audio",l',x) :: l'' -> get_tracks (l' :: r) l''
-      | Xml.Element (s,_,x) :: l' -> get_tracks r (l' @ x)
+      | Element ("audio",l',x) :: l'' -> get_tracks (l' :: r) l''
+      | Element (s,_,x) :: l' -> get_tracks r (l' @ x)
       | _ :: l' -> get_tracks r l'
       | [] -> r
   in
@@ -156,14 +198,11 @@ let smil_tracks xml =
 
 
 let tracks xml =
-  try
-    let xml = lowercase_tags (Xml.parse_string xml) in
-    let t =  get_format [xml] in
-    let tracks =
-      match t with
-        | Podcast | Xspf | Asx -> xml_tracks t xml
-        | Smil -> smil_tracks xml
-    in
-      List.rev tracks
-  with
-    | Xml.Error(e) -> raise (XmlError (Xml.error e))
+  let xml = lowercase_tags (parse_string xml) in
+  let t =  get_format [xml] in
+  let tracks =
+    match t with
+      | Podcast | Xspf | Asx -> xml_tracks t xml
+      | Smil -> smil_tracks xml
+  in
+  List.rev tracks

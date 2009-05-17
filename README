@@ -10,7 +10,7 @@ Prerequisites:
 
 - ocaml >= 3.0.6 (haven't tried earlier versions)
 
-- xml-light >= 2.2 (haven't tried earlier versions)
+- xmlm >= 1.0.1 (haven't tried earlier versions)
 
 - findlib >= 0.8.1 (haven't tried earlier versions)
 

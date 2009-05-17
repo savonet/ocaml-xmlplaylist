@@ -94,15 +94,15 @@ CAMLLIBPATH=`$OCAMLC -where`
 AC_PROG_CC()
 
 #
-# xml-light
+# Xmlm
 #
 
-AC_MSG_CHECKING(for ocaml-xml-light)
-   if ! $OCAMLFIND query xml-light > /dev/null 2>&1 ; then
+AC_MSG_CHECKING(for xmlm)
+   if ! $OCAMLFIND query xmlm > /dev/null 2>&1 ; then
        AC_MSG_ERROR(Not found.)
    else
-   INC="$INC `$OCAMLFIND query xml-light`"
-   requires="$requires xml-light"
+   INC="$INC `$OCAMLFIND query xmlm`"
+   requires="$requires xmlm"
    AC_MSG_RESULT(ok)
 fi
 

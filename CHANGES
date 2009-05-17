@@ -1,6 +1,7 @@
 0.1.2 ()
 =====
 * Fixed Makefile for BSD: call $(MAKE) for generating documentation.
+* Now using xmlm instead of xml-light.
 
 0.1.1 (16-04-2008)
 =====
