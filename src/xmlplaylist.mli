@@ -43,6 +43,8 @@ val string_of_error : error -> string
     All metadatas are what is provided by the playlist
     The only variable name that is changed is the author
     because each formats has its own field for that.
-    The module will use "artist" *)
+    The module will use "artist".
+   
+    Order of tracks is preserved. *)
 val tracks : string -> ((string * string) list * string) list
 

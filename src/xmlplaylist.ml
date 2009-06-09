@@ -155,19 +155,20 @@ let xml_tracks t xml =
       | _ :: l' -> (parse_metadatas m l')
       | [] -> m
   in
-  let rec parse_tracks t =
+  let rec parse_tracks t r =
     match t with
       | track :: l -> 
          begin
           try 
-            (parse_metadatas [] track, parse_uri track) :: 
-                           parse_tracks l 
+            parse_tracks l 
+                ((parse_metadatas [] track, parse_uri track) :: 
+                  r)
           with 
-            | Error Empty -> parse_tracks l
+            | Error Empty -> parse_tracks l r
          end
-      | [] -> []
+      | [] -> r
   in
-  parse_tracks tracks
+  parse_tracks tracks []
 
 let smil_tracks xml =
   let rec get_tracks r l =
@@ -189,20 +190,19 @@ let smil_tracks xml =
       | (s,s') :: l' -> (s, s') :: (smil_meta m l')
       | [] -> m
   in
-  let rec parse_tracks t =
+  let rec parse_tracks t r =
     match t with
-      | track :: l -> (try (smil_meta [] track, smil_uri track) :: parse_tracks l with Error Empty -> parse_tracks l)
-      | [] -> []
+      | track :: l -> 
+         parse_tracks l 
+             (try (smil_meta [] track, smil_uri track) :: r with Error Empty -> r)
+      | [] -> r
   in
-    parse_tracks tracks
+    parse_tracks tracks []
 
 
 let tracks xml =
   let xml = lowercase_tags (parse_string xml) in
   let t =  get_format [xml] in
-  let tracks =
-    match t with
-      | Podcast | Xspf | Asx -> xml_tracks t xml
-      | Smil -> smil_tracks xml
-  in
-  List.rev tracks
+  match t with
+    | Podcast | Xspf | Asx -> xml_tracks t xml
+    | Smil -> smil_tracks xml

@@ -2,6 +2,8 @@
 =====
 * Fixed Makefile for BSD: call $(MAKE) for generating documentation.
 * Now using xmlm instead of xml-light.
+* Make sure that order of tracks is preserved when parsing the
+  playlists.
 
 0.1.1 (16-04-2008)
 =====
