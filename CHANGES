@@ -1,5 +1,6 @@
 0.1.2 ()
 =====
+* Added support for --enable-debugging configure option
 * Fixed Makefile for BSD: call $(MAKE) for generating documentation.
 * Now using xmlm instead of xml-light.
 * Make sure that order of tracks is preserved when parsing the
