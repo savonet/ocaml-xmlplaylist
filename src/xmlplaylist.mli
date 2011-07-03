@@ -29,9 +29,15 @@
     Currently supported formats are:
      [podcast (rss), xspf, smil asx] *)
 
+(** {2 Types and exceptions} *)
+
 type error = XmlError of string | Empty | UnknownType | Internal
-type format = Podcast | Xspf | Smil | Asx
+
 exception Error of error
+
+type format = Podcast | Xspf | Smil | Asx
+
+(** {2 Functions} *)
 
 (** Get meaning of Error e *)
 val string_of_error : error -> string
@@ -45,6 +51,12 @@ val string_of_error : error -> string
     because each formats has its own field for that.
     The module will use "artist".
    
-    Order of tracks is preserved. *)
-val tracks : string -> ((string * string) list * string) list
+    Order of tracks is preserved. 
+    
+    [format] is an optional argument, used to force
+    format detection. Otherwise. [detect_format] is 
+    used. *)
+val tracks : ?format:format -> string -> ((string * string) list * string) list
 
+(** Try to detect the format automatically. *)
+val detect_format : string -> format

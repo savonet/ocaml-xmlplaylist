@@ -28,12 +28,29 @@ type error = XmlError of string | Empty | UnknownType | Internal
 type format = Podcast | Xspf | Smil | Asx
 exception Error of error
 
-let string_of_error e =
-  match e with
+let string_of_error =
+  function 
     | XmlError s -> Printf.sprintf "xml error: %s" s
     | Empty -> "no interesting data in Xml"
     | UnknownType -> "unknown Xml type"
-    | Internal -> "xmliq internal error"
+    | Internal -> "xmlplaylist internal error"
+
+(* Dummy registration function for
+ * user compiling with ocaml < 3.11.2 *)
+let register_printer _ = ()
+
+(* Now open Printexc,
+ * overriding register_printer
+ * if present *)
+open Printexc
+
+let () = 
+  let f = 
+    function
+      | Error e -> Some (string_of_error e)
+      | _ -> None
+  in
+  register_printer f
 
 let raise e = raise (Error e)
 
@@ -199,10 +216,17 @@ let smil_tracks xml =
   in
     parse_tracks tracks []
 
-
-let tracks xml =
+let tracks ?format xml =
   let xml = lowercase_tags (parse_string xml) in
-  let t =  get_format [xml] in
+  let t = 
+    match format with
+      | Some t -> t
+      | None   -> get_format [xml]
+  in
   match t with
     | Podcast | Xspf | Asx -> xml_tracks t xml
     | Smil -> smil_tracks xml
+
+let detect_format xml = 
+  let xml = lowercase_tags (parse_string xml) in
+  get_format [xml]

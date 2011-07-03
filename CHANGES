@@ -1,3 +1,11 @@
+0.1.3 (02-07-2011)
+=====
+* Register string_of_exception in Printexc
+  when available (i.e. ocaml version >= 3.12)
+* Exported a new [detect_format] function.
+* Added an optional argument to [tracks] that
+  allows to force the format detection.
+
 0.1.2 (12-10-2009)
 =====
 * Added support for --enable-debugging configure option
