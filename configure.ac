@@ -1,14 +1,12 @@
 
 # check for one particular file of the sources 
-AC_INIT(ocaml-xmlplaylist, 0.1.3, savonet-users@lists.sourceforge.net)
+AC_INIT([ocaml-xmlplaylist],[0.1.3],[savonet-users@lists.sourceforge.net])
 
 VERSION=$PACKAGE_VERSION
 AC_SUBST(VERSION)
 AC_MSG_RESULT([configuring $PACKAGE_STRING])
 
-AC_CHECK_OCAML_COMPILERS()
-
-AC_PROG_CC()
+AC_BASE_CHECKS()
 
 #
 # Xmlm
