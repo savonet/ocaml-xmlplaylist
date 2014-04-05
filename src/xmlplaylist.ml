@@ -35,22 +35,13 @@ let string_of_error =
     | UnknownType -> "unknown Xml type"
     | Internal -> "xmlplaylist internal error"
 
-(* Dummy registration function for
- * user compiling with ocaml < 3.11.2 *)
-let register_printer _ = ()
-
-(* Now open Printexc,
- * overriding register_printer
- * if present *)
-open Printexc
-
 let () = 
   let f = 
     function
       | Error e -> Some (string_of_error e)
       | _ -> None
   in
-  register_printer f
+  Printexc.register_printer f
 
 let raise e = raise (Error e)
 
@@ -113,26 +104,26 @@ let rec get_format x =
        | [] -> raise UnknownType
    in *)
   match x with
-    | Element(s,l,x) :: l' when s = "playlist" -> Xspf
-    | Element(s,l,x) :: l' when s = "rss" -> Podcast (* match_rss l *)
-    | Element(s,l,x) :: l' when s = "smil" -> Smil
-    | Element(s,l,x) :: l' when s = "asx" -> Asx
-    | Element(s,l,x) :: l' -> get_format (l' @ x)
+    | Element(s,_,_) :: _ when s = "playlist" -> Xspf
+    | Element(s,_,_) :: _ when s = "rss" -> Podcast (* match_rss l *)
+    | Element(s,_,_) :: _ when s = "smil" -> Smil
+    | Element(s,_,_) :: _ when s = "asx" -> Asx
+    | Element(_,_,x) :: l' -> get_format (l' @ x)
     | _ :: l' -> get_format l'
     | [] -> raise UnknownType
 
-let podcast_uri l x =
+let podcast_uri l _ =
   try
     List.assoc "url" l
   with
     | _ -> raise Empty
 
-let xspf_uri l x =
+let xspf_uri _ x =
   match x with
     | PCData(v) :: [] -> v
     | _ -> raise Empty
 
-let asx_uri l x =
+let asx_uri l _ =
   try
     List.assoc "href" l
   with
@@ -152,14 +143,14 @@ let xml_tracks t xml =
   let rec get_tracks l r =
     match l with
       | Element (s,_,x) :: l' when s = track -> get_tracks l' (x :: r)
-      | Element (s,_,x) :: l' -> get_tracks (l' @ x) r
+      | Element (_,_,x) :: l' -> get_tracks (l' @ x) r
       | _ :: l' -> get_tracks l' r
       | [] -> r
   in
   let tracks = get_tracks [xml] [] in
   let rec parse_uri l =
     match l with
-      | Element (s,l,x) :: l' when s = location -> extract l x
+      | Element (s,l,x) :: _ when s = location -> extract l x
       | Element (_,_,_) :: l' -> parse_uri l'
       | _ :: l' -> parse_uri l'
       | [] -> raise Empty
@@ -190,8 +181,8 @@ let xml_tracks t xml =
 let smil_tracks xml =
   let rec get_tracks r l =
     match l with
-      | Element ("audio",l',x) :: l'' -> get_tracks (l' :: r) l''
-      | Element (s,_,x) :: l' -> get_tracks r (l' @ x)
+      | Element ("audio",l',_) :: l'' -> get_tracks (l' :: r) l''
+      | Element (_,_,x) :: l' -> get_tracks r (l' @ x)
       | _ :: l' -> get_tracks r l'
       | [] -> r
   in
