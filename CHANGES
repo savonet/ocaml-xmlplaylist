@@ -1,4 +1,4 @@
-0.1.4 ()
+0.1.4 (03-08-2015)
 =====
 * Switched deprecated String.lowercase API
   to String.lowercase_ascii
