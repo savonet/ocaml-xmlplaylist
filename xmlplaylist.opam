@@ -21,4 +21,3 @@ depends: [
 ]
 bug-reports: "https://github.com/savonet/ocaml-xmlplaylist/issues"
 dev-repo: "git+https://github.com/savonet/ocaml-xmlplaylist.git"
-synopsis: "Library to parse various file playlists in XML format"
