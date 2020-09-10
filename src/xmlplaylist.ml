@@ -35,30 +35,6 @@ let string_of_error =
     | UnknownType -> "unknown Xml type"
     | Internal -> "xmlplaylist internal error"
 
-exception Not_implemented
-
-module type StringWrapper =
-sig
-  include module type of String
-  val lowercase : string -> string
-end
-
-module StringWrapper : StringWrapper =
-struct
-  let lowercase _ = raise Not_implemented
-  let () =
-    try ignore(lowercase "") with Not_implemented -> ()
-  include String
-end
-
-module StringCompat =
-struct
-  let lowercase_ascii = StringWrapper.lowercase
-  let () =
-    try ignore(lowercase_ascii "") with Not_implemented -> ()
-  include String
-end
-
 let () = 
   let f = 
     function
@@ -110,9 +86,9 @@ let parse_string s =
 let rec lowercase_tags xml =
   match xml with
     | Element(s,l,x) ->
-        Element(StringCompat.lowercase_ascii s,
+        Element(String.lowercase_ascii s,
                     List.map
-                      (fun (a,b) -> (StringCompat.lowercase_ascii a,b))
+                      (fun (a,b) -> (String.lowercase_ascii a,b))
                       l,
                     List.map lowercase_tags x)
     | _ -> xml
