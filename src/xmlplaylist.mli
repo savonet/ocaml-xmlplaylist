@@ -20,7 +20,6 @@
 
  *****************************************************************************)
 
-
 (** Generic xml playlist parsing module 
   
     This module implements basic playlist parsing
