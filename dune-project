@@ -10,7 +10,7 @@
 
 (package
  (name xmlplaylist)
- (synopsis "Library providing monadic threads")
+ (synopsis "Library to parse various file playlists in XML format")
  (depends
   (ocaml (>= 4.03.0))
   (dune (> 2.0))
